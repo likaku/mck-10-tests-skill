@@ -1,19 +1,19 @@
-# 🎯 McKinsey Strategic 10 Tests — AI Strategy Coach
+# 🎯 MCK Strategic 10 Tests — AI Strategy Coach
 
 ```
-    ╔══════════════════════════════════════════╗
-    ║                                          ║
-    ║   M c K I N S E Y   S T R A T E G I C   ║
-    ║          1 0   T E S T S                 ║
-    ║                                          ║
-    ║     "Have You Tested Your Strategy?"     ║
-    ║                                          ║
-    ╚══════════════════════════════════════════╝
+    ╔══════════════════════════════════╗
+    ║                                  ║
+    ║   M C K   S T R A T E G I C     ║
+    ║       1 0   T E S T S           ║
+    ║                                  ║
+    ║  "Have You Tested Your Strategy?"║
+    ║                                  ║
+    ╚══════════════════════════════════╝
 ```
 
 **不是又一个无聊的战略问卷。是一个会拍桌子挑战你的 AI 战略教练。**
 
-基于麦肯锡经典方法论 *"Have You Tested Your Strategy Lately?"* (McKinsey Quarterly, 2011)，这个 Skill 把十大战略检验维度变成了一场有温度、有锐度的**教练式对话**——你说出你的想法，AI 顾问帮你拷问它。
+基于 MCK 经典方法论 *"Have You Tested Your Strategy Lately?"* (2011)，这个 Skill 把十大战略检验维度变成了一场有温度、有锐度的**教练式对话**——你说出你的想法，AI 顾问帮你拷问它。
 
 ---
 
@@ -78,7 +78,7 @@
 
 ---
 
-## 📊 麦肯锡战略十问维度
+## 📊 MCK 战略十问维度
 
 每个维度 1-4 分，AI 基于对话内容自行评分。
 
@@ -103,7 +103,7 @@
 
 1. 将 `SKILL.md` 和 `references/` 目录放入：
    ```
-   ~/.workbuddy/skills/mckinsey-10-tests/
+   ~/.workbuddy/skills/mck-10-tests/
    ```
 
 2. 在对话中说出你的想法：
@@ -122,7 +122,7 @@
 ## 📁 文件结构
 
 ```
-mckinsey-10-tests-skill/
+mck-10-tests-skill/
 ├── SKILL.md                    # 核心 Skill 定义（角色、流程、行为规范）
 ├── references/
 │   └── methodology.md          # 十问详细方法论（评分标准、理论依据）
@@ -163,7 +163,7 @@ mckinsey-10-tests-skill/
 
 ## 📖 方法论来源
 
-- Bradley, C., Hirt, M., & Smit, S. (2011). *"Have you tested your strategy lately?"* McKinsey Quarterly.
+- Bradley, C., Hirt, M., & Smit, S. (2011). *"Have you tested your strategy lately?"* MCK Quarterly.
 - Bradley, C., Hirt, M., & Smit, S. (2018). *Strategy Beyond the Hockey Stick*. Wiley.
 - Rumelt, R. (2011). *Good Strategy Bad Strategy*. Crown Business.
 
