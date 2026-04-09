@@ -380,9 +380,12 @@ def _add_para(doc, text='', font_name=KAITI_FONT_NAME, size=11, color=_DK_RGB,
 
 
 def _add_navy_heading(doc, text, size=16):
-    """Add a navy section heading with bottom border."""
+    """Add a navy section heading with bottom border. Always keeps with next paragraph."""
     p = _add_para(doc, text, KAITI_FONT_NAME, size, _NAVY_RGB, bold=True,
                   space_before=Pt(14), space_after=Pt(2))
+    # Keep with next — prevent heading orphaned on previous page
+    p.paragraph_format.keep_with_next = True
+    p.paragraph_format.keep_together = True
     # Bottom border
     pPr = p._element.get_or_add_pPr()
     pBdr = parse_xml(
@@ -517,8 +520,10 @@ def generate_report_docx(data, output_path):
     # Insert radar at document level (more reliable rendering)
     doc.add_picture(radar_tmp, width=Cm(14))
     # Center the last paragraph (which contains the picture)
-    doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.paragraphs[-1].paragraph_format.space_after = Pt(8)
+    last_p = doc.paragraphs[-1]
+    last_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    last_p.paragraph_format.space_after = Pt(8)
+    last_p.paragraph_format.keep_with_next = True
 
     # Score table with real progress bar images
     _bar_dir = os.path.join(os.path.dirname(output_path) or '.', '_bars')
@@ -606,6 +611,7 @@ def generate_report_docx(data, output_path):
 
         # Dimension header
         p = _add_para(doc, '', space_before=Pt(4), space_after=Pt(1))
+        p.paragraph_format.keep_with_next = True
         dot = p.add_run('●  ')
         _set_run(dot, ARIAL_FONT_NAME, 10, clr)
         hdr = p.add_run(f'{d["name"]}  {sc}/4')
@@ -626,6 +632,7 @@ def generate_report_docx(data, output_path):
 
     # Top 3
     p = _add_para(doc, '最强 TOP 3', KAITI_FONT_NAME, 12, _GREEN_RGB, bold=True, space_after=Pt(4))
+    p.paragraph_format.keep_with_next = True
     for i, s in enumerate(data['top3_strengths']):
         _add_para(doc, f'{i+1}. {s["name"]}（{s["score"]}/4）— {s["reason"]}',
                   KAITI_FONT_NAME, 10.5, _DK_RGB, space_after=Pt(2))
@@ -634,6 +641,7 @@ def generate_report_docx(data, output_path):
 
     # Weak 3
     p = _add_para(doc, '优先改进 TOP 3', KAITI_FONT_NAME, 12, _RED_RGB, bold=True, space_after=Pt(4))
+    p.paragraph_format.keep_with_next = True
     for i, imp in enumerate(data['top3_improvements']):
         clr = _RED_RGB if imp['score'] == 1 else _ORANGE_RGB
         _add_para(doc, f'{i+1}. {imp["name"]}（{imp["score"]}/4）— {imp["reason"]}',
@@ -650,6 +658,7 @@ def generate_report_docx(data, output_path):
 
     for a in data.get('priority_actions', []):
         p = _add_para(doc, '', space_before=Pt(4), space_after=Pt(1))
+        p.paragraph_format.keep_with_next = True
         icon_run = p.add_run(f'{a["icon"]}  ')
         _set_run(icon_run, ARIAL_FONT_NAME, 12, _NAVY_RGB)
         label_run = p.add_run(a['label'])
