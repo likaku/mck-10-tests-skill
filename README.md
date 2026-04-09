@@ -28,6 +28,29 @@
 这就是这个 Skill 做的事。
 
 ---
+## Community
+
+<table width="100%">
+    <tr>
+      <td align="center" width="50%" valign="top">
+        <p><strong>WeChat Group / 微信交流群</strong></p>
+<img width="160" alt="Clipboard_Screenshot_1775490127" src="https://github.com/user-attachments/assets/968c81fa-70aa-478d-928c-16059ee51299" />
+        <br/>
+        <sub style="color: gray;">扫描二维码加入社群</sub>
+      </td>
+      <td align="center" width="50%" valign="top">
+        <p><strong>Discord Server</strong></p>
+        <br/>
+        <a href="https://discord.gg/SaFybFAT">
+          <img src="https://img.shields.io/badge/Discord-Join_Community-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord" />
+        </a>
+        <br/><br/>
+        <p>Click above to join our global community</p>
+      </td>
+    </tr>
+  </table>
+
+---
 
 ## ✨ 它跟普通的"战略评估工具"有什么不同？
 
