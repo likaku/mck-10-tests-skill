@@ -514,47 +514,75 @@ def generate_report_docx(data, output_path):
     radar_tmp = output_path.replace('.docx', '_radar.png')
     _radar([d['score'] for d in dims], [d['name'] for d in dims], radar_tmp)
 
-    # Insert radar
-    p = _add_para(doc, '', space_after=Pt(4))
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = p.add_run()
-    run.add_picture(radar_tmp, width=Cm(12))
+    # Insert radar at document level (more reliable rendering)
+    doc.add_picture(radar_tmp, width=Cm(14))
+    # Center the last paragraph (which contains the picture)
+    doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.paragraphs[-1].paragraph_format.space_after = Pt(8)
 
-    # Score table
+    # Score table with real progress bar images
+    _bar_dir = os.path.join(os.path.dirname(output_path) or '.', '_bars')
+    os.makedirs(_bar_dir, exist_ok=True)
+
     tbl = doc.add_table(rows=len(dims), cols=3)
     tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
-    for idx, d in enumerate(dims):
-        sc = d['score']
-        clr = _SCORE_RGB.get(sc, _MD_RGB)
 
-        # Dimension name
-        cell0 = tbl.cell(idx, 0)
-        cell0.width = Cm(4)
-        p = cell0.paragraphs[0]
-        run = p.add_run(d['name'])
-        _set_run(run, KAITI_FONT_NAME, 10, _DK_RGB)
-
-        # Score
-        cell1 = tbl.cell(idx, 1)
-        cell1.width = Cm(2)
-        p = cell1.paragraphs[0]
-        run = p.add_run(f'{sc}/4')
-        _set_run(run, ARIAL_FONT_NAME, 10, clr, bold=True)
-
-        # Visual bar using shading
-        cell2 = tbl.cell(idx, 2)
-        cell2.width = Cm(10)
-        bar_str = '█' * sc + '░' * (4 - sc)
-        p = cell2.paragraphs[0]
-        run = p.add_run(bar_str)
-        _set_run(run, ARIAL_FONT_NAME, 10, clr)
-
-    # Remove table borders for clean look
+    # Set table width to full page
     tbl_xml = tbl._tbl
     tblPr = tbl_xml.find(qn('w:tblPr'))
     if tblPr is None:
         tblPr = parse_xml(f'<w:tblPr {nsdecls("w")}></w:tblPr>')
         tbl_xml.insert(0, tblPr)
+
+    # Full-width table
+    tblW = parse_xml(f'<w:tblW {nsdecls("w")} w:w="5000" w:type="pct"/>')
+    tblPr.append(tblW)
+
+    for idx, d in enumerate(dims):
+        sc = d['score']
+        clr_rgb = SCORE_CLR.get(sc, MD)  # PIL color tuple
+        clr_docx = _SCORE_RGB.get(sc, _MD_RGB)
+
+        # Col 0: Dimension name
+        cell0 = tbl.cell(idx, 0)
+        cell0.width = Cm(3.5)
+        p = cell0.paragraphs[0]
+        p.paragraph_format.space_after = Pt(1)
+        p.paragraph_format.space_before = Pt(1)
+        run = p.add_run(d['name'])
+        _set_run(run, KAITI_FONT_NAME, 10, _DK_RGB)
+
+        # Col 1: Progress bar as image
+        cell1 = tbl.cell(idx, 1)
+        cell1.width = Cm(9)
+        # Generate a tiny progress bar image
+        bar_w, bar_h = 400, 18
+        bar_img = Image.new('RGB', (bar_w, bar_h), (240, 240, 240))
+        bar_draw = ImageDraw.Draw(bar_img)
+        # Background rounded rect
+        bar_draw.rounded_rectangle([(0, 0), (bar_w - 1, bar_h - 1)], radius=bar_h // 2, fill=(225, 225, 225))
+        # Filled portion
+        fill_w = max(bar_h, int(bar_w * sc / 4))
+        bar_draw.rounded_rectangle([(0, 0), (fill_w, bar_h - 1)], radius=bar_h // 2, fill=clr_rgb)
+        bar_path = os.path.join(_bar_dir, f'bar_{idx}.png')
+        bar_img.save(bar_path)
+
+        p = cell1.paragraphs[0]
+        p.paragraph_format.space_after = Pt(1)
+        p.paragraph_format.space_before = Pt(1)
+        run = p.add_run()
+        run.add_picture(bar_path, width=Cm(7), height=Cm(0.35))
+
+        # Col 2: Score number
+        cell2 = tbl.cell(idx, 2)
+        cell2.width = Cm(2)
+        p = cell2.paragraphs[0]
+        p.paragraph_format.space_after = Pt(1)
+        p.paragraph_format.space_before = Pt(1)
+        run = p.add_run(f'{sc}/4')
+        _set_run(run, ARIAL_FONT_NAME, 10, clr_docx, bold=True)
+
+    # Remove table borders for clean look
     borders = parse_xml(
         f'<w:tblBorders {nsdecls("w")}>'
         f'  <w:top w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
@@ -640,9 +668,13 @@ def generate_report_docx(data, output_path):
     os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
     doc.save(output_path)
 
-    # Cleanup radar
+    # Cleanup temp files
     if os.path.exists(radar_tmp):
         os.remove(radar_tmp)
+    # Cleanup bar images
+    import shutil
+    if os.path.exists(_bar_dir):
+        shutil.rmtree(_bar_dir)
 
     print(f'✅ {output_path}')
     return output_path
