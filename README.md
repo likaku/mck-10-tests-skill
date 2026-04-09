@@ -127,7 +127,7 @@ mck-10-tests-skill/
 ├── references/
 │   └── methodology.md          # 十问详细方法论（评分标准、理论依据）
 ├── scripts/
-│   └── render_report_card.py   # 长图报告卡渲染器 v4（白底·楷体·雷达图·紧凑排版）
+│   └── render_report_card.py   # 报告生成器 v5（PNG长图 + Word + PDF，楷体·雷达图·紧凑排版）
 ├── CHANGELOG.md                # 版本变更记录
 ├── LICENSE                     # Apache License 2.0
 └── README.md                   # 你正在读的这个
@@ -177,10 +177,10 @@ mck-10-tests-skill/
 
 See [CHANGELOG.md](./CHANGELOG.md) for full version history.
 
-**Latest: v2.0.0** (2026-04-09)
-- License: MIT → Apache 2.0
-- Report template: concise half-length format with From→To natural language narrative
-- Report card renderer v4: KaiTi font, larger text, tighter layout, matplotlib radar chart
+**Latest: v2.1.0** (2026-04-09)
+- Triple output: PNG long-image + Word (.docx) + PDF — all from the same data
+- Word document preserves identical layout: KaiTi + Arial, navy headings, radar chart, score bars
+- `generate_all(data, base_path)` one-call convenience function
 
 ---
 

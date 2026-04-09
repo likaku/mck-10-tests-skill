@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-McKinsey 10 Tests — 战略诊断报告长图生成器 v4
+McKinsey 10 Tests — 战略诊断报告生成器 v5
+输出三种格式：长图 PNG · Word DOCX · PDF
 白底黑字 · 楷体中文/Arial英文 · 雷达图 · 紧凑排版 · 大字号 · 自然语言
 """
 
@@ -12,6 +13,14 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+
+# Word / PDF
+from docx import Document
+from docx.shared import Pt, Cm, Inches, RGBColor, Emu
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml.ns import qn, nsdecls
+from docx.oxml import parse_xml
 
 # ── Fonts ─────────────────────────────────────────────────────
 KAITI_PATH = '/System/Library/AssetsV2/com_apple_MobileAsset_Font8/88d6cc32a907955efa1d014207889413890573be.asset/AssetData/Kaiti.ttc'
@@ -310,6 +319,363 @@ def generate_report_card(data, output_path):
     return output_path
 
 
+# ══════════════════════════════════════════════════════════════
+# ██  WORD (.docx) GENERATOR  ██
+# ══════════════════════════════════════════════════════════════
+
+# Color helpers for docx
+_NAVY_RGB   = RGBColor(5, 28, 44)
+_BLK_RGB    = RGBColor(15, 15, 15)
+_DK_RGB     = RGBColor(30, 30, 30)
+_MD_RGB     = RGBColor(70, 70, 70)
+_LT_RGB     = RGBColor(160, 160, 160)
+_RED_RGB    = RGBColor(190, 42, 40)
+_ORANGE_RGB = RGBColor(195, 110, 25)
+_AMBER_RGB  = RGBColor(155, 135, 30)
+_GREEN_RGB  = RGBColor(32, 120, 65)
+_WHITE_RGB  = RGBColor(255, 255, 255)
+
+_SCORE_RGB = {1: _RED_RGB, 2: _ORANGE_RGB, 3: _AMBER_RGB, 4: _GREEN_RGB}
+
+KAITI_FONT_NAME = 'KaiTi'  # Word font name
+ARIAL_FONT_NAME = 'Arial'
+
+
+def _set_run(run, font_name=KAITI_FONT_NAME, size=11, color=_DK_RGB, bold=False):
+    """Configure a run's font properties."""
+    run.bold = bold
+    run.font.size = Pt(size)
+    run.font.color.rgb = color
+    run.font.name = font_name
+    # Force East Asian font for CJK characters
+    r = run._element
+    rPr = r.find(qn('w:rPr'))
+    if rPr is None:
+        rPr = parse_xml(f'<w:rPr {nsdecls("w")}></w:rPr>')
+        r.insert(0, rPr)
+    rFonts = rPr.find(qn('w:rFonts'))
+    if rFonts is None:
+        rFonts = parse_xml(f'<w:rFonts {nsdecls("w")}></w:rFonts>')
+        rPr.insert(0, rFonts)
+    rFonts.set(qn('w:eastAsia'), KAITI_FONT_NAME)
+    if font_name == ARIAL_FONT_NAME:
+        rFonts.set(qn('w:ascii'), ARIAL_FONT_NAME)
+        rFonts.set(qn('w:hAnsi'), ARIAL_FONT_NAME)
+
+
+def _add_para(doc, text='', font_name=KAITI_FONT_NAME, size=11, color=_DK_RGB,
+              bold=False, space_after=Pt(4), space_before=Pt(0), align=None):
+    """Add a paragraph with configured styling."""
+    p = doc.add_paragraph()
+    if align:
+        p.alignment = align
+    pf = p.paragraph_format
+    pf.space_after = space_after
+    pf.space_before = space_before
+    pf.line_spacing = Pt(size * 1.5)
+    if text:
+        run = p.add_run(text)
+        _set_run(run, font_name, size, color, bold)
+    return p
+
+
+def _add_navy_heading(doc, text, size=16):
+    """Add a navy section heading with bottom border."""
+    p = _add_para(doc, text, KAITI_FONT_NAME, size, _NAVY_RGB, bold=True,
+                  space_before=Pt(14), space_after=Pt(2))
+    # Bottom border
+    pPr = p._element.get_or_add_pPr()
+    pBdr = parse_xml(
+        f'<w:pBdr {nsdecls("w")}>'
+        f'  <w:bottom w:val="single" w:sz="12" w:space="3" w:color="051C2C"/>'
+        f'</w:pBdr>'
+    )
+    pPr.append(pBdr)
+    return p
+
+
+def _add_divider(doc, heavy=False):
+    """Add a horizontal line."""
+    color = '051C2C' if heavy else 'E1E1E1'
+    sz = '12' if heavy else '4'
+    p = doc.add_paragraph()
+    pf = p.paragraph_format
+    pf.space_after = Pt(2)
+    pf.space_before = Pt(2)
+    pPr = p._element.get_or_add_pPr()
+    pBdr = parse_xml(
+        f'<w:pBdr {nsdecls("w")}>'
+        f'  <w:bottom w:val="single" w:sz="{sz}" w:space="1" w:color="{color}"/>'
+        f'</w:pBdr>'
+    )
+    pPr.append(pBdr)
+    return p
+
+
+def _shade_cell(cell, color_hex):
+    """Apply background shading to a table cell."""
+    shading = parse_xml(
+        f'<w:shd {nsdecls("w")} w:fill="{color_hex}" w:val="clear"/>'
+    )
+    cell._element.get_or_add_tcPr().append(shading)
+
+
+def generate_report_docx(data, output_path):
+    """Generate a Word document matching the long-image report layout."""
+    doc = Document()
+
+    # ── Page setup: A4, narrow margins ──
+    section = doc.sections[0]
+    section.page_width = Cm(21)
+    section.page_height = Cm(29.7)
+    section.left_margin = Cm(2.2)
+    section.right_margin = Cm(2.2)
+    section.top_margin = Cm(2)
+    section.bottom_margin = Cm(1.5)
+
+    # ── Default font ──
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = KAITI_FONT_NAME
+    font.size = Pt(11)
+    font.color.rgb = _DK_RGB
+    rPr = style.element.find(qn('w:rPr'))
+    if rPr is not None:
+        rFonts = rPr.find(qn('w:rFonts'))
+        if rFonts is None:
+            rFonts = parse_xml(f'<w:rFonts {nsdecls("w")}></w:rFonts>')
+            rPr.insert(0, rFonts)
+        rFonts.set(qn('w:eastAsia'), KAITI_FONT_NAME)
+
+    dims = data['dimensions']
+
+    # ━━ TITLE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    _add_para(doc, data.get('title', 'McKinsey 10 Tests'),
+              KAITI_FONT_NAME, 22, _NAVY_RGB, bold=True, space_after=Pt(2))
+    _add_para(doc, '战略诊断报告', KAITI_FONT_NAME, 14, _BLK_RGB, bold=False, space_after=Pt(6))
+
+    # Meta
+    _add_para(doc, f'诊断对象：{data["subject"]}', KAITI_FONT_NAME, 10, _MD_RGB, space_after=Pt(1))
+    _add_para(doc, f'诊断顾问：{data["advisor"]}  ·  {data["date"]}', KAITI_FONT_NAME, 10, _MD_RGB, space_after=Pt(4))
+    _add_divider(doc, heavy=True)
+
+    # ━━ EXECUTIVE SUMMARY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    _add_navy_heading(doc, '执行摘要')
+
+    # Disclaimer
+    p = _add_para(doc, '', space_after=Pt(4))
+    run = p.add_run('⚠ 本文档为初始想法的梳理，而非最终结论。')
+    _set_run(run, KAITI_FONT_NAME, 10.5, _ORANGE_RGB, bold=False)
+
+    # Summary body
+    _add_para(doc, data['summary'], KAITI_FONT_NAME, 12, _BLK_RGB, space_after=Pt(6))
+
+    # Score badge (table with navy bg)
+    score_text = f'{data["total_score"]}/{data["max_score"]}  ·  {data["grade"]}'
+    tbl = doc.add_table(rows=1, cols=1)
+    tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
+    cell = tbl.cell(0, 0)
+    _shade_cell(cell, '051C2C')
+    p = cell.paragraphs[0]
+    run = p.add_run(f'  {score_text}  ')
+    _set_run(run, ARIAL_FONT_NAME, 13, _WHITE_RGB, bold=True)
+    # Set cell width
+    cell.width = Cm(6)
+    _add_para(doc, '', space_after=Pt(4))
+
+    # ━━ KEY SHIFTS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    _add_navy_heading(doc, '核心判断')
+
+    for i, s in enumerate(data.get('shifts', [])):
+        # Numbered heading
+        p = _add_para(doc, '', space_before=Pt(6), space_after=Pt(2))
+        num_run = p.add_run(f'  {i+1}  ')
+        _set_run(num_run, ARIAL_FONT_NAME, 11, _WHITE_RGB, bold=True)
+        # Fake circle bg via highlight — use navy shading on the number
+        from docx.oxml import OxmlElement
+        rPr = num_run._element.get_or_add_rPr()
+        shd = parse_xml(f'<w:shd {nsdecls("w")} w:val="clear" w:color="auto" w:fill="051C2C"/>')
+        rPr.append(shd)
+
+        head_run = p.add_run(f'  {s["heading"]}')
+        _set_run(head_run, KAITI_FONT_NAME, 13, _BLK_RGB, bold=True)
+
+        # Body
+        _add_para(doc, s['body'], KAITI_FONT_NAME, 11, _DK_RGB, space_after=Pt(2))
+
+        # Rationale
+        if s.get('rationale'):
+            _add_para(doc, s['rationale'], KAITI_FONT_NAME, 10, _MD_RGB, space_after=Pt(6))
+
+    # ━━ RADAR CHART ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    _add_navy_heading(doc, '十维得分')
+
+    # Generate radar image
+    radar_tmp = output_path.replace('.docx', '_radar.png')
+    _radar([d['score'] for d in dims], [d['name'] for d in dims], radar_tmp)
+
+    # Insert radar
+    p = _add_para(doc, '', space_after=Pt(4))
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p.add_run()
+    run.add_picture(radar_tmp, width=Cm(12))
+
+    # Score table
+    tbl = doc.add_table(rows=len(dims), cols=3)
+    tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
+    for idx, d in enumerate(dims):
+        sc = d['score']
+        clr = _SCORE_RGB.get(sc, _MD_RGB)
+
+        # Dimension name
+        cell0 = tbl.cell(idx, 0)
+        cell0.width = Cm(4)
+        p = cell0.paragraphs[0]
+        run = p.add_run(d['name'])
+        _set_run(run, KAITI_FONT_NAME, 10, _DK_RGB)
+
+        # Score
+        cell1 = tbl.cell(idx, 1)
+        cell1.width = Cm(2)
+        p = cell1.paragraphs[0]
+        run = p.add_run(f'{sc}/4')
+        _set_run(run, ARIAL_FONT_NAME, 10, clr, bold=True)
+
+        # Visual bar using shading
+        cell2 = tbl.cell(idx, 2)
+        cell2.width = Cm(10)
+        bar_str = '█' * sc + '░' * (4 - sc)
+        p = cell2.paragraphs[0]
+        run = p.add_run(bar_str)
+        _set_run(run, ARIAL_FONT_NAME, 10, clr)
+
+    # Remove table borders for clean look
+    tbl_xml = tbl._tbl
+    tblPr = tbl_xml.find(qn('w:tblPr'))
+    if tblPr is None:
+        tblPr = parse_xml(f'<w:tblPr {nsdecls("w")}></w:tblPr>')
+        tbl_xml.insert(0, tblPr)
+    borders = parse_xml(
+        f'<w:tblBorders {nsdecls("w")}>'
+        f'  <w:top w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'  <w:left w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'  <w:bottom w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'  <w:right w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'  <w:insideH w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'  <w:insideV w:val="none" w:sz="0" w:space="0" w:color="auto"/>'
+        f'</w:tblBorders>'
+    )
+    tblPr.append(borders)
+
+    _add_para(doc, '', space_after=Pt(4))
+
+    # ━━ FINDINGS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    _add_navy_heading(doc, '关键发现与建议')
+
+    for d in dims:
+        sc = d['score']
+        clr = _SCORE_RGB.get(sc, _MD_RGB)
+
+        # Dimension header
+        p = _add_para(doc, '', space_before=Pt(4), space_after=Pt(1))
+        dot = p.add_run('●  ')
+        _set_run(dot, ARIAL_FONT_NAME, 10, clr)
+        hdr = p.add_run(f'{d["name"]}  {sc}/4')
+        _set_run(hdr, KAITI_FONT_NAME, 12, _BLK_RGB, bold=True)
+
+        # Finding
+        _add_para(doc, d['finding'], KAITI_FONT_NAME, 10.5, _DK_RGB, space_after=Pt(1))
+
+        # Advice
+        p = _add_para(doc, '', space_after=Pt(6))
+        arrow = p.add_run('→ ')
+        _set_run(arrow, ARIAL_FONT_NAME, 10.5, _NAVY_RGB, bold=True)
+        adv = p.add_run(d['advice'])
+        _set_run(adv, KAITI_FONT_NAME, 10.5, _NAVY_RGB)
+
+    # ━━ STRENGTHS + IMPROVEMENTS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    _add_navy_heading(doc, '亮点与改进')
+
+    # Top 3
+    p = _add_para(doc, '最强 TOP 3', KAITI_FONT_NAME, 12, _GREEN_RGB, bold=True, space_after=Pt(4))
+    for i, s in enumerate(data['top3_strengths']):
+        _add_para(doc, f'{i+1}. {s["name"]}（{s["score"]}/4）— {s["reason"]}',
+                  KAITI_FONT_NAME, 10.5, _DK_RGB, space_after=Pt(2))
+
+    _add_para(doc, '', space_after=Pt(4))
+
+    # Weak 3
+    p = _add_para(doc, '优先改进 TOP 3', KAITI_FONT_NAME, 12, _RED_RGB, bold=True, space_after=Pt(4))
+    for i, imp in enumerate(data['top3_improvements']):
+        clr = _RED_RGB if imp['score'] == 1 else _ORANGE_RGB
+        _add_para(doc, f'{i+1}. {imp["name"]}（{imp["score"]}/4）— {imp["reason"]}',
+                  KAITI_FONT_NAME, 10.5, clr, space_after=Pt(1))
+        if imp.get('action'):
+            p = _add_para(doc, '', space_after=Pt(4))
+            arrow = p.add_run('    → ')
+            _set_run(arrow, ARIAL_FONT_NAME, 10, _NAVY_RGB, bold=True)
+            act = p.add_run(imp['action'])
+            _set_run(act, KAITI_FONT_NAME, 10, _NAVY_RGB)
+
+    # ━━ ACTIONS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    _add_navy_heading(doc, '下一步行动')
+
+    for a in data.get('priority_actions', []):
+        p = _add_para(doc, '', space_before=Pt(4), space_after=Pt(1))
+        icon_run = p.add_run(f'{a["icon"]}  ')
+        _set_run(icon_run, ARIAL_FONT_NAME, 12, _NAVY_RGB)
+        label_run = p.add_run(a['label'])
+        _set_run(label_run, KAITI_FONT_NAME, 12, _BLK_RGB, bold=True)
+
+        _add_para(doc, a['text'], KAITI_FONT_NAME, 10.5, _DK_RGB, space_after=Pt(6))
+
+    # ━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    _add_divider(doc)
+    _add_para(doc, 'McKinsey Strategic 10 Tests · 初始想法梳理，非最终结论',
+              KAITI_FONT_NAME, 8, _LT_RGB, space_after=Pt(1))
+    _add_para(doc, f'Generated: {data["date"]}  |  Apache 2.0 License  |  Kaku Li',
+              ARIAL_FONT_NAME, 8, _LT_RGB, space_after=Pt(0))
+
+    # Save
+    os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
+    doc.save(output_path)
+
+    # Cleanup radar
+    if os.path.exists(radar_tmp):
+        os.remove(radar_tmp)
+
+    print(f'✅ {output_path}')
+    return output_path
+
+
+def generate_report_pdf(data, docx_path, pdf_path=None):
+    """Generate PDF from the Word document using docx2pdf (macOS: via Word/LibreOffice)."""
+    if pdf_path is None:
+        pdf_path = docx_path.replace('.docx', '.pdf')
+    try:
+        from docx2pdf import convert
+        convert(docx_path, pdf_path)
+        print(f'✅ {pdf_path}')
+    except Exception as e:
+        print(f'⚠️  PDF conversion failed: {e}')
+        print('   Tip: docx2pdf requires Microsoft Word installed on macOS.')
+        print(f'   The .docx file is ready at: {docx_path}')
+    return pdf_path
+
+
+def generate_all(data, base_path):
+    """Generate all three formats: PNG long-image + DOCX + PDF."""
+    png_path = base_path + '.png'
+    docx_path = base_path + '.docx'
+    pdf_path = base_path + '.pdf'
+
+    generate_report_card(data, png_path)
+    generate_report_docx(data, docx_path)
+    generate_report_pdf(data, docx_path, pdf_path)
+
+    return png_path, docx_path, pdf_path
+
+
 # ── Demo ──────────────────────────────────────────────────────
 if __name__ == '__main__':
     demo = {
@@ -397,5 +763,5 @@ if __name__ == '__main__':
         ],
     }
 
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output', '日世战略诊断长图.png')
-    generate_report_card(demo, out)
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output', '日世战略诊断报告')
+    generate_all(demo, base)

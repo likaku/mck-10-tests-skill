@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.1.0] - 2026-04-09
+
+### Added
+- **Triple-format output**: Report now generates PNG long-image + Word (.docx) + PDF simultaneously
+- `generate_report_docx(data, output_path)` — Word document with identical layout to the long-image
+  - KaiTi (楷体) for Chinese text, Arial for English
+  - Navy section headings with bottom borders
+  - Embedded radar chart image
+  - Score table with colored block bars (█░)
+  - Navy background score badge
+  - Numbered shift cards with navy-shaded circled numbers
+- `generate_report_pdf(data, docx_path, pdf_path)` — PDF conversion via docx2pdf (requires MS Word on macOS)
+- `generate_all(data, base_path)` — convenience function to generate all three formats at once
+- Dependencies added: `python-docx`, `docx2pdf`
+
+---
+
 ## [2.0.0] - 2026-04-09
 
 ### Changed
