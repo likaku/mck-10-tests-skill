@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-McKinsey 10 Tests — 战略诊断报告生成器 v5
+MCK 10 Tests — 战略诊断报告生成器 v5
 输出三种格式：长图 PNG · Word DOCX · PDF
 白底黑字 · 楷体中文/Arial英文 · 雷达图 · 紧凑排版 · 大字号 · 自然语言
 """
@@ -179,7 +179,7 @@ def generate_report_card(data, output_path):
 
     # ━━ HEADER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     y += 36
-    draw.text((MG, y), data.get('title', 'McKinsey 10 Tests'), font=_kaiti(38), fill=NAVY)
+    draw.text((MG, y), data.get('title', 'MCK 10 Tests'), font=_kaiti(38), fill=NAVY)
     y += 52
     draw.text((MG, y), '战略诊断报告', font=_kaiti(22), fill=BLK)
     y += 34
@@ -304,7 +304,7 @@ def generate_report_card(data, output_path):
     # ━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     y += 8
     y = _divider(draw, y)
-    draw.text((MG, y), 'McKinsey Strategic 10 Tests · 初始想法梳理，非最终结论', font=_kaiti(14), fill=LT)
+    draw.text((MG, y), 'MCK Strategic 10 Tests · 初始想法梳理，非最终结论', font=_kaiti(14), fill=LT)
     y += 20
     draw.text((MG, y), f'Generated: {data["date"]}', font=_arial(12), fill=LT)
     y += 24
@@ -453,7 +453,7 @@ def generate_report_docx(data, output_path):
     dims = data['dimensions']
 
     # ━━ TITLE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    _add_para(doc, data.get('title', 'McKinsey 10 Tests'),
+    _add_para(doc, data.get('title', 'MCK 10 Tests'),
               KAITI_FONT_NAME, 22, _NAVY_RGB, bold=True, space_after=Pt(2))
     _add_para(doc, '战略诊断报告', KAITI_FONT_NAME, 14, _BLK_RGB, bold=False, space_after=Pt(6))
 
@@ -668,7 +668,7 @@ def generate_report_docx(data, output_path):
 
     # ━━ FOOTER ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     _add_divider(doc)
-    _add_para(doc, 'McKinsey Strategic 10 Tests · 初始想法梳理，非最终结论',
+    _add_para(doc, 'MCK Strategic 10 Tests · 初始想法梳理，非最终结论',
               KAITI_FONT_NAME, 8, _LT_RGB, space_after=Pt(1))
     _add_para(doc, f'Generated: {data["date"]}  |  Apache 2.0 License  |  Kaku Li',
               ARIAL_FONT_NAME, 8, _LT_RGB, space_after=Pt(0))
@@ -720,7 +720,7 @@ def generate_all(data, base_path):
 # ── Demo ──────────────────────────────────────────────────────
 if __name__ == '__main__':
     demo = {
-        'title': 'McKinsey 10 Tests',
+        'title': 'MCK 10 Tests',
         'subject': '日世（中国）B端转型C端 / 出海东南亚',
         'scenario': '企业战略',
         'advisor': 'Prof. Sterling · 麦肯锡资深董事合伙人',
