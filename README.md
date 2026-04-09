@@ -126,6 +126,10 @@ mck-10-tests-skill/
 ├── SKILL.md                    # 核心 Skill 定义（角色、流程、行为规范）
 ├── references/
 │   └── methodology.md          # 十问详细方法论（评分标准、理论依据）
+├── scripts/
+│   └── render_report_card.py   # 长图报告卡渲染器 v4（白底·楷体·雷达图·紧凑排版）
+├── CHANGELOG.md                # 版本变更记录
+├── LICENSE                     # Apache License 2.0
 └── README.md                   # 你正在读的这个
 ```
 
@@ -169,10 +173,31 @@ mck-10-tests-skill/
 
 ---
 
-## 📜 License
+## 📝 Changelog
 
-MIT License. 自由使用、修改和分发。
+See [CHANGELOG.md](./CHANGELOG.md) for full version history.
+
+**Latest: v2.0.0** (2026-04-09)
+- License: MIT → Apache 2.0
+- Report template: concise half-length format with From→To natural language narrative
+- Report card renderer v4: KaiTi font, larger text, tighter layout, matplotlib radar chart
 
 ---
 
-*Built by [Kaku](https://github.com/likaku) — because every strategy deserves to be stress-tested before it burns cash.*
+## 📜 License
+
+Apache License 2.0. See [LICENSE](./LICENSE) for details.
+
+```
+Copyright 2026 Kaku Li
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+```
+
+---
+
+*Built by [Kaku Li](https://github.com/likaku) — because every strategy deserves to be stress-tested before it burns cash.*
