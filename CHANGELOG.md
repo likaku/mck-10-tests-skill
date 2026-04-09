@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.1.1] - 2026-04-09
+
+### Fixed
+- **Radar chart not visible in Word**: Changed from `run.add_picture()` to `doc.add_picture()` (document-level insertion, more reliable across Word versions)
+- **Score bars too short**: Replaced 4-character Unicode blocks (`██░░`) with PIL-generated colored progress bar images (400×18px) — now visually matches the PNG long-image
+- **Headings split from content across pages**: Added `keep_with_next` + `keep_together` to all section headings, dimension headers, sub-headings (TOP 3), action labels, and radar chart paragraph — no more orphaned titles
+
+---
+
 ## [2.1.0] - 2026-04-09
 
 ### Added
@@ -14,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - KaiTi (楷体) for Chinese text, Arial for English
   - Navy section headings with bottom borders
   - Embedded radar chart image
-  - Score table with colored block bars (█░)
+  - Score table with PIL-generated colored progress bar images
   - Navy background score badge
   - Numbered shift cards with navy-shaded circled numbers
 - `generate_report_pdf(data, docx_path, pdf_path)` — PDF conversion via docx2pdf (requires MS Word on macOS)

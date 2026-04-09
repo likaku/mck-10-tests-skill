@@ -177,9 +177,9 @@ mck-10-tests-skill/
 
 See [CHANGELOG.md](./CHANGELOG.md) for full version history.
 
-**Latest: v2.1.0** (2026-04-09)
+**Latest: v2.1.1** (2026-04-09)
 - Triple output: PNG long-image + Word (.docx) + PDF — all from the same data
-- Word document preserves identical layout: KaiTi + Arial, navy headings, radar chart, score bars
+- Word: real colored progress bars, reliable radar chart, no orphaned headings across pages
 - `generate_all(data, base_path)` one-call convenience function
 
 ---
